@@ -1,0 +1,93 @@
+<deployment-project plugin="plugin.apptool" plugin-version="1.0">
+  <configuration build-checksum="129985776" file="/home/samuel/Repositories/jazz-o-matic/harmony/misc/scrape/audfprint-v0.9/audfprint.prj" location="/home/samuel/Repositories/jazz-o-matic/harmony/misc/scrape/audfprint-v0.9" name="audfprint" target="target.mlapps" target-name="Package App">
+    <param.appname>audfprint</param.appname>
+    <param.authnamewatermark />
+    <param.email />
+    <param.company />
+    <param.icon />
+    <param.icons />
+    <param.summary />
+    <param.description />
+    <param.screenshot />
+    <param.version>1.0</param.version>
+    <param.products.name />
+    <param.products.id />
+    <param.products.version />
+    <param.platforms />
+    <param.output>/home/samuel/Repositories/jazz-o-matic/harmony/misc/scrape/audfprint</param.output>
+    <param.guid>bcf96637-1b12-41b6-93ac-c81379fe69a3</param.guid>
+    <unset>
+      <param.authnamewatermark />
+      <param.email />
+      <param.company />
+      <param.icon />
+      <param.icons />
+      <param.summary />
+      <param.description />
+      <param.screenshot />
+      <param.version />
+      <param.products.name />
+      <param.products.id />
+      <param.products.version />
+      <param.platforms />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}/audfprint.m</file>
+    </fileset.main>
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}/add_tracks_byname.m</file>
+      <file>${PROJECT_ROOT}/alignhashes.m</file>
+      <file>${PROJECT_ROOT}/audioread_custom.m</file>
+      <file>${PROJECT_ROOT}/check_for_new_files.m</file>
+      <file>${PROJECT_ROOT}/find_landmarks.m</file>
+      <file>${PROJECT_ROOT}/flacread.m</file>
+      <file>${PROJECT_ROOT}/ht_clear.m</file>
+      <file>${PROJECT_ROOT}/ht_get_hits.m</file>
+      <file>${PROJECT_ROOT}/ht_hash.m</file>
+      <file>${PROJECT_ROOT}/ht_lengths.m</file>
+      <file>${PROJECT_ROOT}/ht_load.m</file>
+      <file>${PROJECT_ROOT}/ht_match.m</file>
+      <file>${PROJECT_ROOT}/ht_name.m</file>
+      <file>${PROJECT_ROOT}/ht_remove.m</file>
+      <file>${PROJECT_ROOT}/ht_repair.m</file>
+      <file>${PROJECT_ROOT}/ht_retrieve.m</file>
+      <file>${PROJECT_ROOT}/ht_save.m</file>
+      <file>${PROJECT_ROOT}/ht_store.m</file>
+      <file>${PROJECT_ROOT}/landmark2hash.m</file>
+      <file>${PROJECT_ROOT}/listfileread.m</file>
+      <file>${PROJECT_ROOT}/m4aread.m</file>
+      <file>${PROJECT_ROOT}/match_query_byname.m</file>
+      <file>${PROJECT_ROOT}/match_query_hashes.m</file>
+      <file>${PROJECT_ROOT}/mp3read.m</file>
+      <file>${PROJECT_ROOT}/myfileparts.m</file>
+      <file>${PROJECT_ROOT}/process_options.m</file>
+      <file>${PROJECT_ROOT}/rewrite_aligned_audio.m</file>
+      <file>${PROJECT_ROOT}/wavread_downsamp.m</file>
+    </fileset.depfun>
+    <fileset.resources />
+    <fileset.package />
+    <build-deliverables>
+      <file location="/home/samuel/Repositories/jazz-o-matic/harmony/misc/scrape" name="audfprint" optional="false">/home/samuel/Repositories/jazz-o-matic/harmony/misc/scrape/audfprint</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>/home/samuel/Applications/MATLAB</root>
+      <toolboxes />
+    </matlab>
+    <platform>
+      <unix>true</unix>
+      <mac>false</mac>
+      <windows>false</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>true</linux>
+      <solaris>false</solaris>
+      <osver>5.4.0-66-generic</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>glnxa64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>

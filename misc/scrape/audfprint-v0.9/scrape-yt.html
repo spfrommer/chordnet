@@ -1,0 +1,232 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <title>scrape-yt-match-fprint - Recovering fingerprinted audio from YouTube</title>
+<style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+<body><a href="http://www.ee.columbia.edu/~dpwe/">Dan Ellis</a> : <a href="http://www.ee.columbia.edu/~dpwe/resources/">Resources</a>: <a href="http://www.ee.columbia.edu/~dpwe/resources/matlab/">Matlab</a>: <div class="content">
+<h1>scrape-yt-match-fprint - Recovering fingerprinted audio from YouTube</h1>
+
+<h2>Introduction</h2>
+
+<p>
+One use for audio fingerprints is to confirm that audio files at two 
+locations are the same, at least modulo the kinds of channel distortions 
+to which fingerprints are robust.  This is particularly significant in 
+situations where there are legal restrictions that prevent simply copying 
+the files, as with the commercial audio commonly dealt with in Music IR.
+</p>
+
+<p>
+Many commercial music tracks are, however, available via YouTube.  If you 
+want to hear a particular track, you can very often enter the artist and 
+title into YouTube, and quickly locate several videos with different versions 
+of the music as the soundtrack.  Some may be low-quality or mislabeled, but 
+usually you'll quickly find what you want.
+</p>
+
+<p>
+So one approach to "distributing" music audio collections for research 
+that avoids the copyright-infringing act of copying audio files is to 
+distribute descriptions of the tracks, then let any interested researcher 
+grab the audio from YouTube.  However, there may be many different versions 
+on YouTube, with more or less significant variations in performance, timing, 
+or quality.  This can be particularly important when trying to match audio 
+to time-specific annotations (such as chord or structure transcriptions).  
+Then, even something as innocuous as an extra couple of seconds of silence 
+at the start of the track can disrupt the data.
+</p>
+
+<p>
+To solve this, the original researcher could run a fingerprint on the source 
+audio, then distribute this compact but discriminating information.  In 
+fact, by comparing the relative timings of local fingerprint matches, 
+it is also possible to figure out the correct editing (trimming and 
+resampling) to apply to the local audio to make it line up temporally 
+with the reference audio used to create the fingerprints.
+</p>
+
+<p>
+<A HREF="http://labrosa.ee.columbia.edu/~dpwe/resources/matlab/audfprint/">
+audfprint</A> is my landmark-based robust audio fingerprinting tool.  It 
+has provisions to edit query audio and write out a version trimmed and 
+scaled to synchronize within a few milliseconds to the reference audio 
+described in the reference database.
+<p>
+
+<p>
+Thus, to recreate an approximation of a reference audio set, a researcher 
+simply needs to obtain a fingerprint database created from the original 
+audio set, and a set of keywords (i.e., the artist and title) for each track. 
+Then you can query YouTube with those keywords, and use the fingerprinter 
+to (a) check whether the tracks you downloaded actually match the original 
+track, then (b) scale and trim the downloaded audio to line up with the 
+originals.
+</p>
+
+<p>
+To help with this, I've created a small shell script, 
+<A HREF="scrape-yt-match-fprint.sh">scrape-yt-match-fprint.sh</A>
+that takes a set of keywords as input, queries YouTube, downloads 
+the top ten associated videos, checks them against an audfprint 
+fingerprint database, chooses the one with the greatest number of 
+filtered hash matches (which we expect to be the closest match), then 
+writes out a new version of the audio aligned to the fingerprint match.
+Owing to the way audfprint handles outputing aligned files, the name of 
+the file written out is taken from the fingerprint database, and should 
+match the original filename.
+</p>
+</div>
+
+<p>
+Here's a fragment of bash scripting which shows how to use the script:
+</p>
+<tt><pre>
+$ touch PROVENANCE.txt
+$ for f in  `cat idlist.txt`; do
+> n=`grep $f id_plus_artist_title.txt`
+> echo "------ $n"
+> ./scrape-yt-match-fprint.sh "$n" >! tmp.out
+> grep "Best match:" tmp.out >> PROVENANCE.txt
+> sleep 120
+> done
+</pre></tt>
+<p>
+<tt>idlist.txt</tt> is a file of individual single-token identifiers for 
+each track to download, and <tt>id_plus_artist_title.txt</tt> is a similar 
+file but including the full artist name and title on a line with each ID; 
+thus, grepping it returns the keywords whcih are passed to the scraping 
+script.  The output from this script should include exactly one line matching
+"Best match:", and we accumulate these results in <tt>PROVENANCE.txt</tt>, 
+which will tell us eithere the YouTube ID found as the best match, or 
+that no good match was found.  Meanwhile, mp3 versions of each matched file 
+are written, according to the filename stored in the fingerprint database, 
+under the "alignout/" directory.  The <tt>sleep 120</tt> is just to slow 
+down the access to avoid tripping YouTube's excessive use check.
+</p>
+
+<p>
+For this script to work, you need the following packages installed.  I have run this on both Linux and MacOS.
+</p>
+<UL>
+  <LI><A HREF="http://labrosa.ee.columbia.edu/~dpwe/resources/matlab/audfprint/">
+audfprint</A>, the fingeprinter (which involves installing the Matlab Compiler Runtime, linked on the page).</LI>
+  <LI><A HREF="http://rg3.github.io/youtube-dl/">youtube-dl</A>, to grab the files from YouTube.  I just installed this with "port install" on the Mac, and "apt-get install" on Linux.</LI>
+  <LI>wget - but I'm sure you have that anyway</LI>
+  <LI>faad - to decode the audio in the mp4 files downloaded from YouTube</LI>
+  <LI>lame - to write out mp3 files</LI>
+</UL>
+
+<p>
+Beyond that, it should work.
+</p>
+</div>
+
+<H2>Example 1: burgoyne2013 Billboard v2.0 data</H2>
+
+<p>
+These tools were actually developed in response to my wish to use 
+Ashley Burgoyne's excellent
+<A HREF="http://ddmal.music.mcgill.ca/billboard">McGill Billboard Project</A>
+annotations, which include both chords and structure.  Although Ashley 
+includes Echonest features, and generously offers to run other 
+feature extractors over the audio, it's always nice to have local audio 
+to work from.  Ashley kindly sent me a fingerprint database built with
+audfprint, and I was able to use it in conjunction with the 
+scrape-yt-match-fprint script to reconstruct audio for more than 90% 
+of the tracks.  Here are the pieces you'll need:
+</p>
+<UL>
+  <LI><A HREF="billboard.mat">billboard.mat</A>, the audfprint fingerprint database for the 890 files in the Billboard 2.0 dataset.</LI>
+  <LI><A HREF="idlist.txt">idlist.txt</A>, a list of IDs for the 740 unique audio files.</LI>
+  <LI><A HREF="id_plus_artist_title.txt">id_plus_artist_title.txt</A>, the list of all 860 IDs along with the artist and track names.
+</UL>
+<p>
+For reference, 
+<A HREF="bb2013provenance.txt">bb2013provenance.txt</A>
+lists the actual YouTube IDs at which I found the matching audio for each ID (if any).  You don't need this -- the script deduces it -- but it might be interesting for comparison.  Each line is &lt;4 char Billboard index&gt;   &lt;11 char YouTube ID&gt;.  Where no match was found on YouTube, the second part is empty.
+</p>
+
+<H2>Example 2: Isophonics Beatles data</H2>
+
+<p>
+I made an earlier attempt to use fingerprinting for fixing the problem 
+of non-distributable audio when I started using Chris Harte's
+<A HREF="http://isophonics.net/content/reference-annotations-beatles">
+Beatles annotations</A>, which was the first large, consistent, database 
+of manual chord annotations.  Unfortunately, there are many releases of 
+the Beatles' albums, and they differ quite significantly in speed, I think 
+because the master tapes have stretched over time.  I built a special-purpose
+tool, 
+<A HREF="http://labrosa.ee.columbia.edu/matlab/beatles_fprint/">beatles_fprint</A>, 
+to rewrite label files to match local versions of the audio.  Having been recently bitten by the proliferation of label file versions this produces, I now think it's the wrong approach, and I'd rather help people fix their local audio, and keep annotations as a gold standard, without many versions.  So I adapted that fingerprint database to work with the current version of audfprint, and you can use it on YouTube with the tools here (you'll have to edit scrape-yt-match-fprint to use a different fingerprint database).  Here's the database: 
+<A HREF="beatles-fprint.mat">beatles-fprint.mat</A>.
+</p>
+
+<H2>History</H2>
+<UL>
+  <LI>2013-09-02 - intial release
+</UL>
+
+<pre>
+% Last updated: $Date: 2013/09/02 22:12:41 $
+% Dan Ellis &lt;dpwe@ee.columbia.edu&gt;
+</pre>
+</body></html>

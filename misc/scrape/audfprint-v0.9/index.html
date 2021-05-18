@@ -1,0 +1,862 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>AUDFPRINT - Audio fingerprint database creation + query</title><meta name="generator" content="MATLAB 7.14"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-04-01"><meta name="DC.source" content="demo_audfprint.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+
+  </style></head><body><a href="http://www.ee.columbia.edu/~dpwe/">Dan Ellis</a> : <a href="http://www.ee.columbia.edu/~dpwe/resources/">Resources</a>: <a href="http://www.ee.columbia.edu/~dpwe/resources/matlab/">Matlab</a>: <div class="content"><h1>AUDFPRINT - Audio fingerprint database creation + query</h1><!--introduction--><p><tt>audfprint</tt> is a (compiled) Matlab script that can take a list of soundfiles and create a database of landmarks, and then subsequently take one or more query audio files and match them against the previously-created database.  This can be used e.g. to "de-duplicate" a collection of music.  The fingerprint is robust to things like time skews, different encoding schemes, and even added noise.  It can match small fragments of sound, down to 10 sec or less.  It is based on my <a href="http://labrosa.ee.columbia.edu/matlab/fingerprint/">Robust Landmark-Based Audio Fingerprinting</a></p><p>This code is being distributed as a compiled Matlab binary, which requires the matching (freely-available) Matlab Runtime to be installed.  The program has the same syntax and options whether called from the OS shell, or from the Matlab prompt.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Creating a fingerprint database</a></li><li><a href="#2">Querying the database</a></li><li><a href="#3">Using fingerprints for alignment</a></li><li><a href="#4">Removing items</a></li><li><a href="#5">Command line options</a></li><li><a href="#6">Understanding the hash table</a></li><li><a href="#7">Improving performance</a></li><li><a href="#8">Sensitivity to Playback Speed</a></li><li><a href="#9">Installation</a></li><li><a href="#10">Notes</a></li><li><a href="#11">Changelog</a></li></ul></div><h2>Creating a fingerprint database<a name="1"></a></h2><p>In this usage mode, a list of soundfiles is analyzed and written to a single database file.  Various soundfile formats are supported, including wav, mp3 and aac.</p><p>In the file below, reflist.txt consists of full paths to a number of soundfiles, which are then written to fpdbase.mat.  (Note that in this case, the "filenames" in reflist are actually URLs, which can be loaded thanks to special functionality built in to mpg123; this won't work for other file types, and normally reflist would just contain regular file names).  See the Usage section below for additional options.</p><pre class="codeinput">audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-cleardbase</span> <span class="string">1</span> <span class="string">-addlist</span> <span class="string">reflist.txt</span>
+<span class="comment">% The options -nhashbits, -maxnentris, -timesize, -hoptime, and</span>
+<span class="comment">% -jenkins only have an effect when specified at the same time as</span>
+<span class="comment">% -cleardbase, i.e., when initializing a new database.</span>
+
+<span class="comment">% You can use -matchonaddthresh greater than zero to automatically</span>
+<span class="comment">% skp over adding items that already exist in the database</span>
+audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-matchonaddthresh</span> <span class="string">5</span> <span class="string">-add</span> <span class="string">http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/01-Nine_Lives.mp3</span>
+</pre><pre class="codeoutput">Target density = 7 hashes/sec
+01-Apr-2014 23:09:05 Adding #1 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/01-Nine_Lives.mp3...10.0 s, 58 hashes
+01-Apr-2014 23:09:06 Adding #2 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/02-Falling_In_Love.mp3...10.0 s, 75 hashes
+01-Apr-2014 23:09:06 Adding #3 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/03-Hole_In_My_Soul.mp3...10.0 s, 69 hashes
+01-Apr-2014 23:09:06 Adding #4 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/04-Taste_Of_India.mp3...10.0 s, 77 hashes
+01-Apr-2014 23:09:06 Adding #5 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3...10.0 s, 48 hashes
+01-Apr-2014 23:09:07 Adding #6 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/06-Something_s_Gotta_Give.mp3...10.0 s, 44 hashes
+01-Apr-2014 23:09:07 Adding #7 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/07-Ain_t_That_A_Bitch.mp3...10.0 s, 73 hashes
+01-Apr-2014 23:09:07 Adding #8 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/08-The_Farm.mp3...10.0 s, 60 hashes
+01-Apr-2014 23:09:07 Adding #9 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/09-Crash.mp3...10.0 s, 114 hashes
+01-Apr-2014 23:09:07 Adding #10 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/10-Kiss_Your_Past_Good-bye.mp3...10.0 s, 57 hashes
+01-Apr-2014 23:09:07 Adding #11 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/11-Pink.mp3...10.0 s, 57 hashes
+01-Apr-2014 23:09:08 Adding #12 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/12-Attitude_Adjustment.mp3...10.0 s, 74 hashes
+01-Apr-2014 23:09:08 Adding #13 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/13-Fallen_Angels.mp3...10.0 s, 41 hashes
+added 13 tracks (130 secs, 847 hashes, 6.5154 hashes/sec) in 3.0 sec = 0.023 x RT
+Hash table saved to fpdbase (13 tracks, 847 hashes)
+done
+Hash table read from fpdbase (13 tracks, 847 hashes)
+Target density = 7 hashes/sec
+01-Apr-2014 23:09:12 Adding #1 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/01-Nine_Lives.mp3... 
+*** skipping http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/01-Nine_Lives.mp3 - matched to http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/01-Nine_Lives.mp3
+0.0 s, 0 hashes
+added 1 tracks (0 secs, 0 hashes, NaN hashes/sec) in 0.2 sec = Inf x RT
+done
+</pre><h2>Querying the database<a name="2"></a></h2><p>The command below matches a query soundfile against an existing database and returns the paths of the top 5 hits (paths as provided in the reflist.txt above).  Each line of the main output consists of 5 fields: query-file-name hit-number hit-file-name matching-count match-time.  matching-count gives the actual number of common, aligned fingerprints between query and hit; as a rough rule of thumb, more than 10 indicates a good match, although for very short queries even 4 or 5 matches is likely reliable.  Where more than one hit is reported for a query (i.e. -nmatch &gt; 1), they are reported in descending order of relevance, which means descending matching-count.  match-time reports the delay, in seconds, between the start of the reference item and the start of the (aligned) query.</p><pre class="codeinput">audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-match</span> <span class="string">query.mp3</span>
+<span class="comment">% For noisy examples, you can sometimes improve the accuracy by</span>
+<span class="comment">% increasing the hash density for the query alone (without</span>
+<span class="comment">% modifying the reference database)</span>
+audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-match</span> <span class="string">query.mp3</span> <span class="string">-density</span> <span class="string">15</span>
+</pre><pre class="codeoutput">Hash table read from fpdbase (13 tracks, 847 hashes)
+query.mp3 (5.8 s) analyzed to 80 hashes
+query.mp3 1 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3 2 0.070
+matched 1 tracks (5.763 secs, 80 hashes, 13.8817 hashes/sec) in 0.4 sec = 0.077 x RT
+done
+Hash table read from fpdbase (13 tracks, 847 hashes)
+query.mp3 (5.8 s) analyzed to 208 hashes
+query.mp3 1 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3 8 0.070
+matched 1 tracks (5.763 secs, 208 hashes, 36.0924 hashes/sec) in 0.2 sec = 0.038 x RT
+done
+</pre><h2>Using fingerprints for alignment<a name="3"></a></h2><p>Fingerprints can be a compact way to compare the alignment of otherwise matching audiofiles.  For instance, in music mastered from magnetic tape, the speed at which the tape plays back is typically only stabilized to about 0.1%, so different digital masterings of the same music may easily differ by this amount - which can amount to a skew of 0.3 sec by the end of a 300 sec track.  Also, different ripping software and different CD drives will very often introduce different-sized silent gaps at the start of tracks.  Fingerprints can be used to compare such skews and offfsets, and audfprint even includes functionality to trim and resample your tracks to convert query audio into something that is more nearly aligned to the original reference item (which may not be available).</p><pre class="codeinput"><span class="comment">% You can get a detailed match of timing offset and small amounts</span>
+<span class="comment">% of clock skew with -matchalign</span>
+audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-match</span> <span class="string">query.mp3</span> <span class="string">-density</span> <span class="string">15</span> <span class="string">-matchalign</span> <span class="string">1</span>
+<span class="comment">% If you're interested in precise measurements of timing skew, you</span>
+<span class="comment">% might want to use a shorter hop time for more precise timings.</span>
+<span class="comment">% But if you make it very short, you'll want to increase timesize,</span>
+<span class="comment">% since the timings alias after timesize * hoptime (default 16384 *</span>
+<span class="comment">% 0.02322 = 380 sec).  Try -hoptime 0.005 -timesize 65536 which still</span>
+<span class="comment">% gives you more than 5 minutes of unambiguous time.  When using</span>
+<span class="comment">% -matchalign to obtain very precise timings, you should also use</span>
+<span class="comment">% -oversamp 1 to avoid the deliberate offsetting of the file</span>
+<span class="comment">% by fractions of an analysis window implied by -oversamp 0.</span>
+
+<span class="comment">% You can rewrite a resampled version of a match with -alignoutdir</span>
+audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-match</span> <span class="string">query.mp3</span> <span class="string">-density</span> <span class="string">15</span> <span class="string">-matchalign</span> <span class="string">1</span> <span class="string">-alignoutdir</span> <span class="string">alignout</span>
+<span class="comment">% The actual file written takes its name from the name of the</span>
+<span class="comment">% matching file stored in the hash table.  The specified</span>
+<span class="comment">% alignoutdir is prepended to any path found.</span>
+</pre><pre class="codeoutput">Hash table read from fpdbase (13 tracks, 847 hashes)
+query.mp3 (5.8 s) analyzed to 208 hashes
+48;208 hashes, 6 in common, 6 within 0.064 s of median for warp -0.02
+Best match for time T sec in tk 1 (ref) is -0.070+(1+0.000000)*T in tk 2 (qry)
+sox &lt;query.wav&gt; &lt;alignout.wav&gt; speed 1.000000 delay 0.06966 0.06966 trim 0 13.2663
+query.mp3 1 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3 8 0.070
+matched 1 tracks (5.763 secs, 208 hashes, 36.0924 hashes/sec) in 1.1 sec = 0.184 x RT
+done
+Hash table read from fpdbase (13 tracks, 847 hashes)
+query.mp3 (5.8 s) analyzed to 208 hashes
+48;208 hashes, 6 in common, 6 within 0.064 s of median for warp -0.02
+Best match for time T sec in tk 1 (ref) is -0.070+(1+0.000000)*T in tk 2 (qry)
+sox &lt;query.wav&gt; &lt;alignout.wav&gt; speed 1.000000 delay 0.06966 0.06966 trim 0 13.2663
+Warning: popenw not available, writing temporary file
+Wrote skewed audio to alignout/http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3 from query.mp3 with offset=-0.070s skew=1.000000 maxdur=13.0s
+Equivalent sox command:
+sox query.mp3 alignout/http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3 speed 1.000000 delay 0.06966 trim 0 13
+Warped query written to alignout/http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3
+query.mp3 1 http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3 8 0.070
+matched 1 tracks (5.763 secs, 208 hashes, 36.0924 hashes/sec) in 1.8 sec = 0.317 x RT
+done
+</pre><img vspace="5" hspace="5" src="demo_audfprint_01.png" alt=""> <h2>Removing items<a name="4"></a></h2><p>Single tracks can have their hashes removed from the database with the -remove option:</p><pre class="codeinput">audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-remove</span> <span class="string">http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3</span>
+<span class="comment">% Now the query is unknown:</span>
+audfprint <span class="string">-dbase</span> <span class="string">fpdbase</span> <span class="string">-match</span> <span class="string">query.mp3</span>
+</pre><pre class="codeoutput">Hash table read from fpdbase (13 tracks, 847 hashes)
+Hash table saved to fpdbase (12 tracks, 799 hashes)
+done
+Hash table read from fpdbase (12 tracks, 799 hashes)
+query.mp3 (5.8 s) analyzed to 80 hashes
+*** NO HITS FOUND ***
+matched 1 tracks (5.763 secs, 80 hashes, 13.8817 hashes/sec) in 0.2 sec = 0.034 x RT
+done
+</pre><h2>Command line options<a name="5"></a></h2><p>All parameters to <tt>audfprint</tt> are specified in the command line via "-optionname value" pairs.  The full set of options is:</p><pre class="codeinput">audfprint <span class="string">-help</span>
+</pre><pre class="codeoutput">No dbase specified!
+audfprint v0.9 of 20140304
+usage: audfprint ...
+   -dbase &lt;file&gt;     The reference database file
+   -cleardbase 0/1   Create a new database with options...
+     -nhashbits &lt;num&gt;  log_2 of hash table size (20)
+     -maxnentries &lt;num&gt; maximum number of entries per bin (100)
+     -timesize &lt;num&gt;   Maximum value of abs time index (16384)
+     -hoptime &lt;time&gt;   Hop between time windows (0.02322)
+     -targetsr &lt;rate&gt;  Resample to this SR (11025)
+     -jenkins 0/1      use jenkins hash on hashes (0)
+   -density &lt;num&gt;    Target hashes/sec (default: 7.0)
+   -add &lt;file ...&gt;   Sound file(s) to add to database
+   -addlist &lt;file&gt;   List of audio files to add to database
+   -adddir &lt;dir&gt;     Watch this directory and add any files
+   -addskip &lt;count&gt;  Skip this many initial files in addlist
+   -addcheckpoint &lt;count&gt;  Save database every &lt;count&gt; tracks
+   -matchonaddthresh &lt;thr&gt;  Don't add files if match &gt;= thr (0)
+   -remove &lt;name ...&gt; Delete named track(s) from dbase
+   -removelist &lt;file&gt; Delete tracks named in file from dbase
+   -match &lt;file ...&gt; Audio file(s) to match
+   -matchlist &lt;file&gt; List of audio files to match against database
+   -matchdir  &lt;dir&gt;  Watch this directory and match any files
+   -matchmaxret &lt;num&gt; Max num matches to report for each query (5)
+   -matchmincount &lt;num&gt; Minimum count of common hashes to report (0)
+   -matchminprop &lt;num&gt;  Min proportion of max hash count to report (0.1)
+   -maxtofilter &lt;num&gt; Max tracks retained per hash hit (100)
+   -matchwidth &lt;bins&gt; Width of "modal time skew" search (1)
+   -matchalign 0/1   calculate time skew alignment for match (0)
+   -alignoutdir &lt;dir&gt; write aligned versions of queries here
+   -alignoutext &lt;ext&gt; default extension for aligned outputs (.mp3)
+   -warpmax &lt;factor&gt; repeat filtering with warp factors to this (0)
+   -warpstep &lt;step   step size for repeating with warps (0.001)
+   -oversamp &lt;num&gt;   oversampling factor for queries (0..special)
+   -userawcounts 0/1 count hits without applying synchrony filter
+   -skip &lt;time&gt;      drop time from start of each sound
+   -maxdur &lt;time&gt;    truncate soundfiles at this duration (0=all)
+   -list &lt;regexp&gt;    list matching files in the database (. for all)
+   -quiet 0/1        suppress status messages
+   -out &lt;file&gt;       File to write matches out to (stdout)
+   -outdir &lt;dir&gt;     Write match reports to this directory
+</pre><h2>Understanding the hash table<a name="6"></a></h2><p>The fingerprinting works by finding local maxima in the spectrogram, then recording a "landmark" as the relationship between a pair of maxima.  Each pair is encoded as the frequency of the first peak (from a 512-point FFT evaluated on a 11025 Hz sampled signal, so in units of 21.5 Hz, using 8 bits), the difference in frequency bins to the second peak (6 bits, since large jumps are not recorded), and the count of time frames between the two peaks (6 bits, in units of the 23.2 ms hop size). That gives a total of 20 bits, leading to a space of 2^20 = 1M distinct hashes.</p><p>The hash table works by calculating all the landmarks for a given track, as well as the time at which they occur (the absolute time of the first peak, also in 23.2 ms units, used to check the consistency of the relative timing of landmarks and queries).  Then the absolute time and the track ID (i.e. the sequence number of this track in building the database) are packed into a single 32 bit number and stored in the hash table at the address given by the 20 bit hash.  (In fact, the number of buckets in the hash table is determined by -nhashbits; when this is smaller than 20, the 20 bit hashes are "mixed down" to the smaller space, with the effect that multiple hashes in the original space will be recorded in a single bucket).</p><p>Each hash bucket has space to record up to 100 different tracks (controlled by -maxnentries); once that fills up, entries are dropped at random (which is normally OK since that track will be represented by other hashes too - missing any single hash won't prevent recognition). Since the hash table is stored in RAM, the default values need 2^20 buckets x 100 entries/bucket x 4 bytes/entry = 400 MB of RAM.  You can increase the number of entries per bucket with -maxnentries, but make sure you have enough RAM to accommodate the larger table.  You can also reduce the RAM footprint with a smaller -maxnentries.</p><p>Because the absolute time and track ID are packed into a single 32 bit value, we have limited resolution for them.  By default, the time value is stored up to 16384 (controlled by -timesize), i.e., 14 bits; beyond this, it wraps around, which introduces some additional ambiguity in the checking procedure, but is generally OK.  With this default value, we are left with 32-14=18 bits to store the track ID, so the database is limited to 2^18=256k unique tracks; reference tracks beyond this limit will never be returned, but instead will be "aliased" to earlier entries. Reducing -timesize can increase the limit on the number of reference tracks; for instance, a -timesize of 256 (8 bits) would leave 24 bits for track ID, permitting 16M unique tracks to be remembered.  Note, however, that at the default density of 7 hashes/sec, and a typical track of 200 s, we expect at least 1000 hashes per track, but the hash table can only record 2^20 x 100 = 100M distinct hashes, even assuming a nicely uniform distribution across the different hash values.  Thus, beyond 100k tracks, we would anticipate a significant number of "dropped hashes" due to hash table buckets filling up, with a progressive impact on sensitivity.</p><h2>Improving performance<a name="7"></a></h2><p>Increasing -density will improve the accuracy of matching, at the cost of slower processing and a larger hash table.  You can also use a larger -density for the query than used when making the database; despite the mismatch, this usually results in more matching hashes. -oversamp 2 or -oversamp 4 attempts to oversample the query to generate extra hashes.  The default of -oversamp 0 actually runs 4 separate queries, offsetting the query waveform by 1/4 of an analysis window each time, which is effective for overcoming problems with time window alignments.</p><p>For very simple tasks, -userawcounts 1 will skip the filtering by consistent time skew and simply count the number of hashes in common between query and reference, regardless of timing.</p><h2>Sensitivity to Playback Speed<a name="8"></a></h2><p>One distortion commonly encountered in replayed material is speed changes - tracks that are played back at a slightly different rate than the reference item, either due to miscalibration in analog-digital converters (commonly a few hundreds parts per million -- or less than one part in a thousand -- much less than can be perceived as a pitch shift, but enough to cause a drift of about a second per hour), or due to deliberate speed manipulations (e.g. to be able to play more tracks on a radio station by playing them all a bit faster).</p><p>Speed changes can imact the fingerprinting two ways: if the time between two landmark events is changed by an altered timebase, then the quantized value of that time difference (which by default is in 23.2 ms units) may change, losing the hash match.  At a stretch of 1 part per thousand, a time difference of 1 second (the middle of the range that can be represented by 6 bits) will change by 1 ms, which we'd only expect to alter 1% of hash values.</p><p>Another affect is on the spectrum itself; frequency values are also scaled by the sample rate error.  Here, a 0.1% stretch of a peak at 1 kHz will shift it by 1 Hz, well within the 21.5 Hz bin width of our 512-point FFTs on 11025 Hz-sampled signals.</p><p>Finally, time scaling will also affect the relative timing of hashes matched in query and reference: this can affect the final stage filtering of matching hashes by relative time lag. However, the quantization of this stage is quite coarse (1 second), so again a change of 0.1% should have little effect on short excerpts, although the effect will grow with the length of the query.</p><p>Empirically, however, the fingerprinter is quite sensitive to a resampling of 0.1%.  This is perhaps due to changes in the shape of the spectral peaks, leading to small changes in the pattern of landmarks detected.  Here's an example of results matching one track resampled (stretched) by different factors:</p><p>
+<table border=1><tr>
+<tr><th>Stretch factor</th><th>Total query hashes</th><th>Raw
+match</th><th>Skew match</th><th>Filtered</th><th>Warpmax 0.02</th></tr>
+<tr><td>1.0</td><td>5107</td><td>579</td><td>294</td><td>340</td><td>340</td></tr>
+<tr><td>1.0001</td><td>5185</td><td>555</td><td>290</td><td>345</td><td>345</td></tr>
+<tr><td>1.0002</td><td>5219</td><td>542</td><td>294</td><td>325</td><td>325</td></tr>
+<tr><td>1.0005</td><td>5116</td><td>552</td><td>292</td><td>259</td><td>259</td></tr>
+<tr><td>1.001</td><td>5063</td><td>534</td><td>283</td><td>127</td><td>325</td></tr>
+<tr><td>1.002</td><td>5021</td><td>476</td><td>258</td><td>97</td><td>292</td></tr>
+<tr><td>1.005</td><td>5033</td><td>274</td><td>112</td><td>15</td><td>131</td></tr>
+<tr><td>1.01</td><td>5068</td><td>150</td><td>43</td><td>4</td><td>49</td></tr>
+<tr><td>1.02</td><td>5068</td><td>80</td><td>10</td><td>2</td><td>11</td></tr>
+</table>
+</p><p>This is for 225 sec query.  Notice how the "Filtered" number starts to call even for a stretch of 1.0005 (0.05%, or 0.5 parts per thousand).  This results from the final-stage filtering, where the stretch skews matches at the start of the track 0.1 sec relative to those at the end, so we begin to lose them; the individual hashes, as reflected in the "Raw match" column, don't start to drop until 1.002 (0.2% stretch), and are still substantial at 1%.  The "Skew match" column (from the -matchalign option) actually estimates the time stretch, then counts how many of the raw matches are within two bins (64 ms) of this best time warp.  It's smaller than the Filtered match for very small time warps, since it applies a stricter time window. But for larger skews, it compensates out the relative timing shift, so finds many more matches.  Unfortunately, this match requires first estimating the time skew for each possible match, which cannot be done efficiently, so matching relies on the "Filtered match" column, which, by 1%, has fallen to chance-level matching.</p><p>This does suggest, however, that a strategy of sorting by raw match counts, then estimating skews, then making the final decision based on the Skew match counts, would be more robust to time variations even out to 1%.  In this example, for a database of about 1000 tracks, there were 6 tracks with Filtered counts of three or more to the 1%-skewed track, and it was basically luck that the true match was among them.  However, using raw counts, there were 4 tracks with more than 100 hashes in common, but the next best match could only achieve 3 skewed matches after estimating the best time skew - easily distinct from the 43 skewed matches found for the true match.</p><p>As a compromise, however, the -matchwidth option simply widens the tolerance for time-skew-matching in the filtering stages beyond the default 1 bin difference.  Increasing -matchwidth to 5 here increases the Filtered count for the correct match to the 1% stretched version to 17 -- still very low, but now clearly differentiated from the next-best match, which still only achieves 3 filtered matches.</p><p>In v0.88, the -warpmax and -warpstep options were added to help with this case.  Setting a nonzero -warpmax will cause the filtering to search a range of time warpings of the retrieved hashes out to +/- warpmax in steps of -warpstep (default 0.001, 1 part in 1000).  The filtered hash count is then the max over these warp factors.  This option gives the final "Warpmax 0.02" column in the table.  Because the filtering is repeated many times, this option slows down matching.</p><p>At 2% stretch, the true track is only ranked #9 when sorting by raw hash count in this small database; i.e., something like 1% of tracks have more raw matches by chance than the true track, so for any reasonable-sized database, the hash indexing isn't going to find the right track.  Thus, a time stretch of around 1% is likely the limit of useful matching for audfprint, even with these extended warp accommodations.</p><h2>Installation<a name="9"></a></h2><p>This package has been compiled for several targets using the Matlab compiler.  You will also need to download and install the Matlab Compiler Runtime (MCR) Installer. Please see the table below:</p><p>
+<table border=1>
+<tr><th>Architecture</th><th>Compiled package</th><th>MCR Installer</th></tr>
+<!-- tr><td>32 bit Linux</td>
+<td><a href="audfprint_GLNX86.zip">audfprint_GLNX86.zip</a></td>
+<td><a href="http://www.ee.columbia.edu/~dpwe/tmp/MCRInstaller.bin">Linux MCR Installer</a></td>
+</tr -->
+<tr><td>64 bit Linux</td>
+<td><a href="audfprint_GLNXA64.zip">audfprint_GLNXA64.zip</a></td>
+<td><a href="http://www.ee.columbia.edu/~dpwe/tmp/MCRInstaller_glnxa64.bin">Linux 64 bit MCR Installer</a></td></tr>
+<tr><td>64 bit MacOS</td>
+<td><a href="audfprint_MACI64.zip">audfprint_MACI64.zip</a></td>
+<td><a href="http://www.ee.columbia.edu/~dpwe/tmp/MCRInstaller.dmg">MACI64 MCR Installer</a></td></tr>
+</table></p><p>The original Matlab code used to build this compiled target is available at <a href="http://www.ee.columbia.edu/~dpwe/resources/matlab/audfprint">http://www.ee.columbia.edu/~dpwe/resources/matlab/audfprint</a></p><p>All sources are in the package <a href="audfprint-v0.9.zip">audfprint-v0.9.zip</a>.</p><p>Feel free to contact me with any problems.</p><h2>Notes<a name="10"></a></h2><p>The included function <a href="audioread.m">audioread</a> is able to read a wide range of sound file types, but relies on a number of other packages and/or support functions being installed.  Most obscure of these is  ReadSound, a MEX wrapper I wrote for the dpwelib sound file interface.  See the <a href="http://labrosa.ee.columbia.edu/matlab/audioread/">audioread homepage</a> for more details.</p><h2>Changelog<a name="11"></a></h2><pre class="codeinput"><span class="comment">% v0.9  2014-04-03  - There was a bug in the core find_landmarks</span>
+<span class="comment">%                     routine that meant it was taking 507 pt FFTs</span>
+<span class="comment">%                     instead of 512 pt FFTs.  This has been fixed,</span>
+<span class="comment">%                     making fingerprinting 20% faster, but it</span>
+<span class="comment">%                     means that this version is INCOMPATIBLE with</span>
+<span class="comment">%                     earlier databases.  Also, the default hop</span>
+<span class="comment">%                     time has been changed to 0.02322 (instead of</span>
+<span class="comment">%                     0.032) which should have happened at v0.1</span>
+<span class="comment">%                     when I switched to 11 kHz sampling rate.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.88 2013-09-01  - added -matchwidth option to improve</span>
+<span class="comment">%                     recognition of time-skewed items;</span>
+<span class="comment">%                     Added discussion and analysis of time</span>
+<span class="comment">%                     skew above.  Also added -warpmax, -warpstep</span>
+<span class="comment">%                     for more powerful (but more expensive)</span>
+<span class="comment">%                     matching of warped queries.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.87 2013-08-30  - added -alignoutdir which will write aligned</span>
+<span class="comment">%                     versions of query audio under the matched</span>
+<span class="comment">%                     track names.</span>
+<span class="comment">%                   - this has revealed small consistent timing</span>
+<span class="comment">%                     errors in the range 50-150 ms reading and</span>
+<span class="comment">%                     writing MP3 files. mp3read was modified to</span>
+<span class="comment">%                     try to accommodate, but they still persist.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.86 2013-08-26  - fixed bug in flacread that truncated files at</span>
+<span class="comment">%                     1/4 length (thanks, Ashley Burgoyne!)</span>
+<span class="comment">%</span>
+<span class="comment">% v0.85 2013-07-29  - fixed bug with "rebuilding HashTableLengths".</span>
+<span class="comment">%</span>
+<span class="comment">% v0.84 2013-06-23  - database is always saved if it is changed</span>
+<span class="comment">%                     (e.g. for recalc_lens).</span>
+<span class="comment">%                   - -list &lt;pat&gt; now lists only filenames matching</span>
+<span class="comment">%                     regexp pat ('.' for all).</span>
+<span class="comment">%                   - removed -norecalclens since it just led to</span>
+<span class="comment">%                     trouble.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.83 2013-06-08  - added -matchalign which calculates and plots</span>
+<span class="comment">%                     a time skew alignment (offset and time</span>
+<span class="comment">%                     scaling) for the top match.</span>
+<span class="comment">%                   - added -hoptime to allow specification of</span>
+<span class="comment">%                     non-default time grid resolution.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.82 2013-05-27  - default switched to -nojenkins 1</span>
+<span class="comment">%                   - new HashTableLengths records the total number</span>
+<span class="comment">%                     of hashes recorded per reference track.</span>
+<span class="comment">%                     - will calculate on loading an old dbase</span>
+<span class="comment">%                       unless -norecalclens 1</span>
+<span class="comment">%                   - pruning of initial matches now normalized by</span>
+<span class="comment">%                     total number of hashes stored per track.</span>
+<span class="comment">%                     This specifically helps avoid very long</span>
+<span class="comment">%                     tracks "crowding out" shorter, true-match</span>
+<span class="comment">%                     tracks.</span>
+<span class="comment">%                   - -maxtofilter sets how many density-sorted</span>
+<span class="comment">%                     matching tracks are retained per hash hit</span>
+<span class="comment">%</span>
+<span class="comment">% v0.81 2013-05-24  - refactoring of match_query_hashes into</span>
+<span class="comment">%                     ht_match .</span>
+<span class="comment">%</span>
+<span class="comment">% v0.80 2013-05-21  - find_landmarks was made about 20% faster by</span>
+<span class="comment">%                     avoiding processing frames entirely below</span>
+<span class="comment">%                     threshold.  Effort to avoid crashes when</span>
+<span class="comment">%                     adding empty tracks with -matchonaddthresh .</span>
+<span class="comment">%</span>
+<span class="comment">% v0.79 2013-05-18  - implemented -matchonaddthresh to suppress</span>
+<span class="comment">%                     adding tracks if they match something already</span>
+<span class="comment">%                     in the dbase.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.78 2013-05-15  - fixed bug in ht_store that limited default ID</span>
+<span class="comment">%                     space to 131,072 tracks.  New limit is</span>
+<span class="comment">%                     262,144 tracks; reduce -timesize to increase</span>
+<span class="comment">%                     in proportion.</span>
+<span class="comment">%                   - ht_store now throws an error when the ID</span>
+<span class="comment">%                     space fills up.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.77 2013-05-06  - small change to behavior on -remove: if the</span>
+<span class="comment">%                     last few items in -list are all empty, the</span>
+<span class="comment">%                     list is truncated to the last non-deleted item.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.76 2013-04-24  - added -nojenkins flag and options to ht_</span>
+<span class="comment">%                     calls to support hash table without jenkins</span>
+<span class="comment">%                     hash (better for interpreting retrieved hashes).</span>
+<span class="comment">%</span>
+<span class="comment">% v0.75 2013-04-11  - added -removelist to specify a list of files</span>
+<span class="comment">%                     to remove contained in a text file.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.74 2013-04-10  - audioread is now inside try/catch block so</span>
+<span class="comment">%                     any error e.g. from malformed soundfile</span>
+<span class="comment">%                     results in a warning, but does not stop the</span>
+<span class="comment">%                     program.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.73 2013-03-13  - added -list 1 option to list files in database.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.72 2013-02-01  - fixed file count so that it doesn't keep</span>
+<span class="comment">%                     resetting to zero with -addcheckpoint &gt; 0</span>
+<span class="comment">%                   - added version field to dbase so we can</span>
+<span class="comment">%                     check for incompatibilty in the future</span>
+<span class="comment">%                     (in ht_save and ht_load, and audfprint.m).</span>
+<span class="comment">%</span>
+<span class="comment">% v0.71 2012-12-22  - added "persistent" test for mpg123 in mp3read</span>
+<span class="comment">%                     to avoid bug where "which" command returns</span>
+<span class="comment">%                     wrong result</span>
+<span class="comment">%                   - added ht_repair, which checks consistency of</span>
+<span class="comment">%                     HashTableCounts and HashTable before saving (!).</span>
+<span class="comment">%</span>
+<span class="comment">% v0.7 2012-08-01 Added -adddir option for endless</span>
+<span class="comment">%                 directory-watching to add files too; probably</span>
+<span class="comment">%                 only makes sense with -matchdir, although it will</span>
+<span class="comment">%                 continue to save the database respecting</span>
+<span class="comment">%                 -addcheckpoint, and at exit-on-interrupt.  Also,</span>
+<span class="comment">%                 added -add option for explicit sound files on</span>
+<span class="comment">%                 command line, and -add and -match now accept</span>
+<span class="comment">%                 mulitple files (but you can't use both at the</span>
+<span class="comment">%                 same time; it's a hack).</span>
+<span class="comment">%                 Also, fixed problem with -matchdir trying to</span>
+<span class="comment">%                 match '.' and '..' in Unix.</span>
+<span class="comment">%                 Also added -outdir to write per-query report files.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.6 2012-05-29 Added -matchdir option for endless</span>
+<span class="comment">%                 directory-watching mode</span>
+<span class="comment">%</span>
+<span class="comment">% v0.5 2012-05-14 Added -remove option to remove single tracks.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.4 2012-01-21 Now reports time of best match in 5th column of</span>
+<span class="comment">%                 output.  Used to truncate at 20mins, now respects -maxdur.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.3 2012-01-17 Added -matchmincount to exclude hits with few</span>
+<span class="comment">%                 matches, and -matchminprop to exclude hits much worse than</span>
+<span class="comment">%                 best. -nmatch renamed to -matchmaxret.</span>
+<span class="comment">%                 Added detail on report format above.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.2 2012-01-09 Added -addcheckpoint to save partial versions of</span>
+<span class="comment">%                 database during long add operations.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.1 2012-01-06 Some speed optimizations; enabled -oversamp 1;</span>
+<span class="comment">%                 added -quiet and -addskip options</span>
+<span class="comment">%                 Biggest change was switch to 11025 Hz sampling</span>
+<span class="comment">%                 rate (from 8000); now runs about 4x faster for mp3s.</span>
+<span class="comment">%                 *NB* databases made with v0.0 cannot be used with v0.1.</span>
+<span class="comment">%</span>
+<span class="comment">% v0.0 2011-12-09 Initial release</span>
+
+<span class="comment">% Last updated: $Date: 2011/12/09 20:30:34 $</span>
+<span class="comment">% Dan Ellis &lt;dpwe@ee.columbia.edu&gt;</span>
+</pre><p class="footer"><br>
+      Published with MATLAB&reg; 7.14<br></p></div><!--
+##### SOURCE BEGIN #####
+%% AUDFPRINT - Audio fingerprint database creation + query
+%
+% |audfprint| is a (compiled) Matlab script that can take a list of
+% soundfiles and create a database of landmarks, and then
+% subsequently take one or more query audio files and match them
+% against the previously-created database.  This can be used e.g. 
+% to "de-duplicate" a collection of music.  The fingerprint is
+% robust to things like time skews, different encoding schemes, and
+% even added noise.  It can match small fragments of sound, down to
+% 10 sec or less.  It is based on my 
+% <http://labrosa.ee.columbia.edu/matlab/fingerprint/ Robust Landmark-Based Audio Fingerprinting>
+%
+% This code is being distributed as a compiled Matlab binary, which
+% requires the matching (freely-available) Matlab Runtime to be
+% installed.  The program has the same syntax and options whether
+% called from the OS shell, or from the Matlab prompt.
+
+%% Creating a fingerprint database
+%
+% In this usage mode, a list of soundfiles is analyzed and written
+% to a single database file.  Various soundfile formats are
+% supported, including wav, mp3 and aac.
+%
+% In the file below, reflist.txt consists of full paths to a number
+% of soundfiles, which are then written to fpdbase.mat.  (Note that
+% in this case, the "filenames" in reflist are actually URLs, which
+% can be loaded thanks to special functionality built in to mpg123;
+% this won't work for other file types, and normally reflist would
+% just contain regular file names).  See the
+% Usage section below for additional options.
+
+audfprint -dbase fpdbase -cleardbase 1 -addlist reflist.txt
+% The options -nhashbits, -maxnentris, -timesize, -hoptime, and
+% -jenkins only have an effect when specified at the same time as
+% -cleardbase, i.e., when initializing a new database.
+
+% You can use -matchonaddthresh greater than zero to automatically
+% skp over adding items that already exist in the database
+audfprint -dbase fpdbase -matchonaddthresh 5 -add http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/01-Nine_Lives.mp3
+
+%% Querying the database
+%
+% The command below matches a query soundfile against an existing
+% database and returns the paths of the top 5 hits (paths as
+% provided in the reflist.txt above).  Each line of the main output 
+% consists of 5 fields: query-file-name hit-number hit-file-name
+% matching-count match-time.  matching-count gives the actual number of
+% common, aligned fingerprints between query and hit; as a rough
+% rule of thumb, more than 10 indicates a good match, although for
+% very short queries even 4 or 5 matches is likely reliable.  Where
+% more than one hit is reported for a query (i.e. -nmatch > 1), 
+% they are reported in descending order of relevance, which means
+% descending matching-count.  match-time reports the delay, in
+% seconds, between the start of the reference item and the start of
+% the (aligned) query.
+
+audfprint -dbase fpdbase -match query.mp3
+% For noisy examples, you can sometimes improve the accuracy by
+% increasing the hash density for the query alone (without
+% modifying the reference database)
+audfprint -dbase fpdbase -match query.mp3 -density 15
+
+%% Using fingerprints for alignment
+% 
+% Fingerprints can be a compact way to compare the alignment of
+% otherwise matching audiofiles.  For instance, in music mastered
+% from magnetic tape, the speed at which the tape plays back is
+% typically only stabilized to about 0.1%, so different digital
+% masterings of the same music may easily differ by this amount - 
+% which can amount to a skew of 0.3 sec by the end of a 300 sec
+% track.  Also, different ripping software and different CD drives
+% will very often introduce different-sized silent gaps at the
+% start of tracks.  Fingerprints can be used to compare such skews
+% and offfsets, and audfprint even includes functionality to trim
+% and resample your tracks to convert query audio into something
+% that is more nearly aligned to the original reference item (which
+% may not be available).
+
+% You can get a detailed match of timing offset and small amounts
+% of clock skew with -matchalign
+audfprint -dbase fpdbase -match query.mp3 -density 15 -matchalign 1
+% If you're interested in precise measurements of timing skew, you 
+% might want to use a shorter hop time for more precise timings.
+% But if you make it very short, you'll want to increase timesize,
+% since the timings alias after timesize * hoptime (default 16384 *
+% 0.02322 = 380 sec).  Try -hoptime 0.005 -timesize 65536 which still 
+% gives you more than 5 minutes of unambiguous time.  When using
+% -matchalign to obtain very precise timings, you should also use
+% -oversamp 1 to avoid the deliberate offsetting of the file
+% by fractions of an analysis window implied by -oversamp 0. 
+
+% You can rewrite a resampled version of a match with -alignoutdir
+audfprint -dbase fpdbase -match query.mp3 -density 15 -matchalign 1 -alignoutdir alignout
+% The actual file written takes its name from the name of the
+% matching file stored in the hash table.  The specified
+% alignoutdir is prepended to any path found.
+
+%% Removing items
+%
+% Single tracks can have their hashes removed from the database
+% with the -remove option:
+
+audfprint -dbase fpdbase -remove http://labrosa.ee.columbia.edu/~dpwe/tmp/Nine_Lives/05-Full_Circle.mp3
+% Now the query is unknown:
+audfprint -dbase fpdbase -match query.mp3
+
+%% Command line options
+% 
+% All parameters to |audfprint| are specified in the command line
+% via "-optionname value" pairs.  The full set of options is:
+
+audfprint -help
+
+%% Understanding the hash table
+%
+% The fingerprinting works by finding local maxima in the
+% spectrogram, then recording a "landmark" as the relationship
+% between a pair of maxima.  Each pair is encoded as the frequency
+% of the first peak (from a 512-point FFT evaluated on a 11025 Hz
+% sampled signal, so in units of 21.5 Hz, using 8 bits), the
+% difference in frequency bins to the second peak (6 bits, since
+% large jumps are not recorded), and the count of time frames
+% between the two peaks (6 bits, in units of the 23.2 ms hop size). 
+% That gives a total of 20 bits, leading to a space of 2^20 = 1M
+% distinct hashes.  
+%
+% The hash table works by calculating all the
+% landmarks for a given track, as well as the time at which they
+% occur (the absolute time of the first peak, also in 23.2 ms
+% units, used to check the consistency of the relative timing of
+% landmarks and queries).  Then the absolute time and the track ID (i.e. the
+% sequence number of this track in building the database) are
+% packed into a single 32 bit number and stored in the hash table
+% at the address given by the 20 bit hash.  (In fact, the number of
+% buckets in the hash table is determined by -nhashbits; when this
+% is smaller than 20, the 20 bit hashes are "mixed down" to the
+% smaller space, with the effect that multiple hashes in the
+% original space will be recorded in a single bucket).
+%
+% Each hash bucket has
+% space to record up to 100 different tracks (controlled by
+% -maxnentries); once that fills up, entries are dropped at random
+% (which is normally OK since that track will be represented by
+% other hashes too - missing any single hash won't prevent
+% recognition).  
+% Since the hash table is stored in RAM, the
+% default values need 2^20 buckets x 100 entries/bucket x 4
+% bytes/entry = 400 MB of RAM.  You can increase the number of entries per
+% bucket with -maxnentries, but make sure you have enough RAM to
+% accommodate the larger table.  You can also reduce the RAM
+% footprint with a smaller -maxnentries.
+%
+% Because the absolute time and track ID are packed into a single
+% 32 bit value, we have limited resolution for them.  By default,
+% the time value is stored up to 16384 (controlled by -timesize),
+% i.e., 
+% 14 bits; beyond this, it wraps around, which introduces some
+% additional ambiguity in the checking procedure, but is generally 
+% OK.  With this default value, we are left with 32-14=18 bits to
+% store the track ID, so the database is limited to 2^18=256k
+% unique tracks; reference tracks beyond this limit will never be
+% returned, but instead will be "aliased" to earlier entries.  
+% Reducing -timesize can increase the limit on the number of
+% reference tracks; for instance, a -timesize of 256 (8 bits) would
+% leave 24 bits for track ID, permitting 16M unique tracks to be
+% remembered.  Note, however, that at the default density of 7
+% hashes/sec, and a typical track of 200 s, we expect at least 1000
+% hashes per track, but the hash table can only record 2^20 x 100 =
+% 100M distinct hashes, even assuming a nicely uniform distribution
+% across the different hash values.  Thus, beyond 100k tracks, we
+% would anticipate a significant number of "dropped hashes" due to
+% hash table buckets filling up, with a progressive impact on
+% sensitivity.  
+
+%% Improving performance
+%
+% Increasing -density will improve the accuracy of matching, at the
+% cost of slower processing and a larger hash table.  You can also
+% use a larger -density for the query than used when making the
+% database; despite the mismatch, this usually results in more
+% matching hashes. -oversamp 2 or -oversamp 4 attempts to
+% oversample the query to generate extra hashes.  The default of
+% -oversamp 0 actually runs 4 separate queries, offsetting the
+% query waveform by 1/4 of an analysis window each time, which is
+% effective for overcoming problems with time window alignments.  
+% 
+% For very simple tasks, -userawcounts 1 will
+% skip the filtering by consistent time skew and simply count the
+% number of hashes in common between query and reference,
+% regardless of timing. 
+
+%% Sensitivity to Playback Speed
+%
+% One distortion commonly encountered in replayed material is speed
+% changes - tracks that are played back at a slightly different
+% rate than the reference item, either due to miscalibration in 
+% analog-digital converters (commonly a few hundreds parts per 
+% million REPLACE_WITH_DASH_DASH or less than one part in a thousand REPLACE_WITH_DASH_DASH much less than
+% can be perceived as a pitch shift, but enough to cause a drift of
+% about a second per hour), or due to deliberate speed
+% manipulations (e.g. to be able to play more tracks on a radio
+% station by playing them all a bit faster).  
+%
+% Speed changes can imact the fingerprinting two ways: if the time
+% between two landmark events is changed by an altered timebase,
+% then the quantized value of that time difference (which by
+% default is in 23.2 ms units) may change, losing the hash match.  At
+% a stretch of 1 part per thousand, a time difference of 1 second
+% (the middle of the range that can be represented by 6 bits) will
+% change by 1 ms, which we'd only expect to alter 1% of hash
+% values.  
+%
+% Another affect is on the spectrum itself; frequency values are
+% also scaled by the sample rate error.  Here, a 0.1% stretch of a
+% peak at 1 kHz will shift it by 1 Hz, well within the 21.5 Hz bin
+% width of our 512-point FFTs on 11025 Hz-sampled signals.
+%
+% Finally, time scaling will also affect the relative timing of 
+% hashes matched in query and reference: this can affect the final
+% stage filtering of matching hashes by relative time lag.
+% However, the quantization of this stage is quite coarse (1
+% second), so again a change of 0.1% should have little effect on 
+% short excerpts, although the effect will grow with the length of 
+% the query.
+%
+% Empirically, however, the fingerprinter is quite sensitive to a
+% resampling of 0.1%.  This is perhaps due to changes in the shape
+% of the spectral peaks, leading to small changes in the pattern of
+% landmarks detected.  Here's an example of results matching one
+% track resampled (stretched) by different factors:
+%
+% <html>
+% <table border=1><tr>
+% <tr><th>Stretch factor</th><th>Total query hashes</th><th>Raw
+% match</th><th>Skew match</th><th>Filtered</th><th>Warpmax 0.02</th></tr>
+% <tr><td>1.0</td><td>5107</td><td>579</td><td>294</td><td>340</td><td>340</td></tr>
+% <tr><td>1.0001</td><td>5185</td><td>555</td><td>290</td><td>345</td><td>345</td></tr>
+% <tr><td>1.0002</td><td>5219</td><td>542</td><td>294</td><td>325</td><td>325</td></tr>
+% <tr><td>1.0005</td><td>5116</td><td>552</td><td>292</td><td>259</td><td>259</td></tr>
+% <tr><td>1.001</td><td>5063</td><td>534</td><td>283</td><td>127</td><td>325</td></tr>
+% <tr><td>1.002</td><td>5021</td><td>476</td><td>258</td><td>97</td><td>292</td></tr>
+% <tr><td>1.005</td><td>5033</td><td>274</td><td>112</td><td>15</td><td>131</td></tr>
+% <tr><td>1.01</td><td>5068</td><td>150</td><td>43</td><td>4</td><td>49</td></tr>
+% <tr><td>1.02</td><td>5068</td><td>80</td><td>10</td><td>2</td><td>11</td></tr>
+% </table>
+% </html>
+%
+% This is for 225 sec query.  Notice how the "Filtered" number
+% starts to call even for a stretch of 1.0005 (0.05%, or 0.5 parts
+% per thousand).  This results from the final-stage filtering,
+% where the stretch skews matches at the start of the track 0.1 sec
+% relative to those at the end, so we begin to lose them; the
+% individual hashes, as reflected in the "Raw match" column, don't
+% start to drop until 1.002 (0.2% stretch), and are still
+% substantial at 1%.  The
+% "Skew match" column (from the -matchalign option) 
+% actually estimates the time stretch, then
+% counts how many of the raw matches are within two bins (64 ms) of
+% this best time warp.  It's smaller than the Filtered match for
+% very small time warps, since it applies a stricter time window.
+% But for larger skews, it compensates out the relative timing
+% shift, so finds many more matches.  Unfortunately, this match
+% requires first estimating the time skew for each possible match,
+% which cannot be done efficiently, so matching relies on the
+% "Filtered match" column, which, by 1%, has fallen to chance-level
+% matching.  
+%
+% This does suggest, however, that a strategy of sorting 
+% by raw match counts, then estimating skews, then making the final 
+% decision based on the Skew match counts, would be more robust to 
+% time variations even out to 1%.  In this example, for a database 
+% of about 1000 tracks, there were 6 tracks with Filtered counts of
+% three or more to the 1%-skewed track, and it was basically luck
+% that the true match was among them.  However, using raw counts,
+% there were 4 tracks with more than 100 hashes in common, but the
+% next best match could only achieve 3 skewed matches after
+% estimating the best time skew - easily distinct from the 43
+% skewed matches found for the true match.
+%
+% As a compromise, however, the -matchwidth option simply widens
+% the tolerance for time-skew-matching in the filtering stages
+% beyond the default 1 bin difference.  Increasing -matchwidth to 5
+% here increases the Filtered count for the correct match to the
+% 1% stretched version to 17 REPLACE_WITH_DASH_DASH still very low, but now clearly
+% differentiated from the next-best match, which still only
+% achieves 3 filtered matches.
+%
+% In v0.88, the -warpmax and -warpstep options were added to help
+% with this case.  Setting a nonzero -warpmax will cause the
+% filtering to search a range of time warpings of the retrieved
+% hashes out to +/- warpmax in steps of -warpstep (default 0.001, 
+% 1 part in 1000).  The filtered hash count is then the max over
+% these warp factors.  This option gives the final "Warpmax 0.02" 
+% column in the table.  Because the filtering is repeated many
+% times, this option slows down matching.
+%
+% At 2% stretch, the true track is only ranked #9 when sorting by
+% raw hash count in this small database; i.e., something like 1% of
+% tracks have more raw matches by chance than the true track, so
+% for any reasonable-sized database, the hash indexing isn't going
+% to find the right track.  Thus, a time stretch of around 1% is
+% likely the limit of useful matching for audfprint, even with these
+% extended warp accommodations.
+
+%% Installation
+% 
+% This package has been compiled for several targets 
+% using the Matlab compiler.  You will also need 
+% to download and install the Matlab Compiler Runtime (MCR) Installer. 
+% Please see the table below:
+%
+% <html>
+% <table border=1>
+% <tr><th>Architecture</th><th>Compiled package</th><th>MCR Installer</th></tr>
+% <!REPLACE_WITH_DASH_DASH tr><td>32 bit Linux</td>
+% <td><a href="audfprint_GLNX86.zip">audfprint_GLNX86.zip</a></td>
+% <td><a href="http://www.ee.columbia.edu/~dpwe/tmp/MCRInstaller.bin">Linux MCR Installer</a></td>
+% </tr REPLACE_WITH_DASH_DASH>
+% <tr><td>64 bit Linux</td>
+% <td><a href="audfprint_GLNXA64.zip">audfprint_GLNXA64.zip</a></td>
+% <td><a href="http://www.ee.columbia.edu/~dpwe/tmp/MCRInstaller_glnxa64.bin">Linux 64 bit MCR Installer</a></td></tr>
+% <tr><td>64 bit MacOS</td>
+% <td><a href="audfprint_MACI64.zip">audfprint_MACI64.zip</a></td>
+% <td><a href="http://www.ee.columbia.edu/~dpwe/tmp/MCRInstaller.dmg">MACI64 MCR Installer</a></td></tr>
+% </table></html>
+% 
+% The original Matlab code used to build this compiled target is 
+% available at <http://www.ee.columbia.edu/~dpwe/resources/matlab/audfprint>
+%
+% All sources are in the package <audfprint-v0.9.zip>.
+%
+% Feel free to contact me with any problems.
+
+%% Notes
+%
+% The included function <audioread.m audioread> is able to read a
+% wide range of sound file types, but relies on a number of other
+% packages and/or support functions being installed.  Most obscure
+% of these is  ReadSound, a MEX wrapper I wrote for the dpwelib
+% sound file interface.  See the 
+% <http://labrosa.ee.columbia.edu/matlab/audioread/ audioread homepage>
+% for more details.
+
+%% Changelog
+
+% v0.9  2014-04-03  - There was a bug in the core find_landmarks
+%                     routine that meant it was taking 507 pt FFTs
+%                     instead of 512 pt FFTs.  This has been fixed,
+%                     making fingerprinting 20% faster, but it
+%                     means that this version is INCOMPATIBLE with 
+%                     earlier databases.  Also, the default hop
+%                     time has been changed to 0.02322 (instead of
+%                     0.032) which should have happened at v0.1
+%                     when I switched to 11 kHz sampling rate.
+%
+% v0.88 2013-09-01  - added -matchwidth option to improve
+%                     recognition of time-skewed items; 
+%                     Added discussion and analysis of time 
+%                     skew above.  Also added -warpmax, -warpstep
+%                     for more powerful (but more expensive)
+%                     matching of warped queries.
+%
+% v0.87 2013-08-30  - added -alignoutdir which will write aligned
+%                     versions of query audio under the matched
+%                     track names.
+%                   - this has revealed small consistent timing
+%                     errors in the range 50-150 ms reading and
+%                     writing MP3 files. mp3read was modified to
+%                     try to accommodate, but they still persist.
+%
+% v0.86 2013-08-26  - fixed bug in flacread that truncated files at
+%                     1/4 length (thanks, Ashley Burgoyne!)
+%
+% v0.85 2013-07-29  - fixed bug with "rebuilding HashTableLengths".
+%
+% v0.84 2013-06-23  - database is always saved if it is changed
+%                     (e.g. for recalc_lens).
+%                   - -list <pat> now lists only filenames matching 
+%                     regexp pat ('.' for all).
+%                   - removed -norecalclens since it just led to
+%                     trouble. 
+%
+% v0.83 2013-06-08  - added -matchalign which calculates and plots
+%                     a time skew alignment (offset and time
+%                     scaling) for the top match.
+%                   - added -hoptime to allow specification of
+%                     non-default time grid resolution.
+% 
+% v0.82 2013-05-27  - default switched to -nojenkins 1
+%                   - new HashTableLengths records the total number
+%                     of hashes recorded per reference track.
+%                     - will calculate on loading an old dbase
+%                       unless -norecalclens 1
+%                   - pruning of initial matches now normalized by
+%                     total number of hashes stored per track.
+%                     This specifically helps avoid very long
+%                     tracks "crowding out" shorter, true-match
+%                     tracks. 
+%                   - -maxtofilter sets how many density-sorted
+%                     matching tracks are retained per hash hit
+%
+% v0.81 2013-05-24  - refactoring of match_query_hashes into
+%                     ht_match .
+%
+% v0.80 2013-05-21  - find_landmarks was made about 20% faster by
+%                     avoiding processing frames entirely below 
+%                     threshold.  Effort to avoid crashes when
+%                     adding empty tracks with -matchonaddthresh .
+%
+% v0.79 2013-05-18  - implemented -matchonaddthresh to suppress
+%                     adding tracks if they match something already
+%                     in the dbase.
+%
+% v0.78 2013-05-15  - fixed bug in ht_store that limited default ID
+%                     space to 131,072 tracks.  New limit is
+%                     262,144 tracks; reduce -timesize to increase
+%                     in proportion.  
+%                   - ht_store now throws an error when the ID
+%                     space fills up.
+%
+% v0.77 2013-05-06  - small change to behavior on -remove: if the
+%                     last few items in -list are all empty, the
+%                     list is truncated to the last non-deleted item.
+%
+% v0.76 2013-04-24  - added -nojenkins flag and options to ht_
+%                     calls to support hash table without jenkins
+%                     hash (better for interpreting retrieved hashes).
+% 
+% v0.75 2013-04-11  - added -removelist to specify a list of files 
+%                     to remove contained in a text file.
+%
+% v0.74 2013-04-10  - audioread is now inside try/catch block so
+%                     any error e.g. from malformed soundfile
+%                     results in a warning, but does not stop the
+%                     program. 
+%
+% v0.73 2013-03-13  - added -list 1 option to list files in database.
+%
+% v0.72 2013-02-01  - fixed file count so that it doesn't keep 
+%                     resetting to zero with -addcheckpoint > 0
+%                   - added version field to dbase so we can 
+%                     check for incompatibilty in the future 
+%                     (in ht_save and ht_load, and audfprint.m).
+%
+% v0.71 2012-12-22  - added "persistent" test for mpg123 in mp3read
+%                     to avoid bug where "which" command returns
+%                     wrong result
+%                   - added ht_repair, which checks consistency of
+%                     HashTableCounts and HashTable before saving (!).
+%
+% v0.7 2012-08-01 Added -adddir option for endless
+%                 directory-watching to add files too; probably
+%                 only makes sense with -matchdir, although it will
+%                 continue to save the database respecting
+%                 -addcheckpoint, and at exit-on-interrupt.  Also,
+%                 added -add option for explicit sound files on
+%                 command line, and -add and -match now accept
+%                 mulitple files (but you can't use both at the
+%                 same time; it's a hack).
+%                 Also, fixed problem with -matchdir trying to
+%                 match '.' and '..' in Unix.
+%                 Also added -outdir to write per-query report files.
+%
+% v0.6 2012-05-29 Added -matchdir option for endless
+%                 directory-watching mode
+%
+% v0.5 2012-05-14 Added -remove option to remove single tracks.
+%
+% v0.4 2012-01-21 Now reports time of best match in 5th column of
+%                 output.  Used to truncate at 20mins, now respects -maxdur.
+%
+% v0.3 2012-01-17 Added -matchmincount to exclude hits with few
+%                 matches, and -matchminprop to exclude hits much worse than
+%                 best. -nmatch renamed to -matchmaxret.  
+%                 Added detail on report format above.
+%
+% v0.2 2012-01-09 Added -addcheckpoint to save partial versions of
+%                 database during long add operations.
+%
+% v0.1 2012-01-06 Some speed optimizations; enabled -oversamp 1;
+%                 added -quiet and -addskip options
+%                 Biggest change was switch to 11025 Hz sampling
+%                 rate (from 8000); now runs about 4x faster for mp3s.
+%                 *NB* databases made with v0.0 cannot be used with v0.1.
+%
+% v0.0 2011-12-09 Initial release
+
+% Last updated: $Date: 2011/12/09 20:30:34 $
+% Dan Ellis <dpwe@ee.columbia.edu>
+
+##### SOURCE END #####
+--></body></html>
