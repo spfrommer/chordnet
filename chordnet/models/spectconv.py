@@ -19,7 +19,7 @@ class SpectrumConv(nn.Module):
 
 def build_spectrum_sequential(in_channels, out_channels, L, H, nonlin,
                               octave_n=1, bin_n=12, flatten_last=False):
-    # flatten_last will make the output have 12 bins, no matter how many bins the input has
+    # flatten_last will make the output have 12 bins / octave
     spectra_args = {'octave_n': octave_n, 'bin_n': bin_n}
 
     out_stride = bin_n // 12 if flatten_last else 1

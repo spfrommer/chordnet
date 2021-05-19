@@ -65,7 +65,7 @@ def run(model, epochs, data, fetch_data, file_filter, augment):
     models = {'mlp': (MLP(dataset.props), 1),
               'mlprnn': (MLPRNN(dataset.props), 1),
               'conv': (ConvNet(dataset.props), 1),
-              'chord': (ChordNet(dataset.props), 0)}
+              'chord': (ChordNet(dataset.props), 1)}
 
     model, gpus = models[model]
 

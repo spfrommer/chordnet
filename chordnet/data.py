@@ -90,6 +90,7 @@ class ChordDataModule(pl.LightningDataModule):
             if metadata is None:
                 raise RuntimeError('Must specify data type!')
             dataset_type = metadata['dataset_type']
+            print(f'Loaded dataset type: {dataset_type}')
             self.load_dataset = False
         else:
             if not fetch_data:

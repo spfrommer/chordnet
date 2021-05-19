@@ -8,3 +8,5 @@ misc/gen/package.json
 misc/gen/package-lock.json
 misc/data_zips/
 
+__pycache__/
+*.pyc

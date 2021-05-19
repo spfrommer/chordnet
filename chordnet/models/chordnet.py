@@ -26,6 +26,9 @@ class ChordNet(Model):
         # self.history_inclusions = [0]
         in_channels = len(self.history_inclusions)
 
+        self.shared_net = build_spectrum_sequential(
+            1, 1, L=2, H=20, nonlin=nonlin, **spectra_args)
+
         self.attention_net = build_spectrum_sequential(in_channels, in_channels,
             L=2, H=20, nonlin=nonlin, flatten_last=True, **spectra_args)
 
@@ -50,6 +53,12 @@ class ChordNet(Model):
         rolls = [self.roll_zeros_seq(x, roll_amount) for roll_amount in self.history_inclusions]
         x = torch.flip(torch.stack(rolls, 1), (1, ))
 
+        # Flatten past/future seq to apply the shared net
+        x = x.reshape(-1, 1, x.shape[2])
+        x = self.shared_net(x)
+        x = x.reshape(seq_n, -1, x.shape[2])
+
+        # Flatten bins to 12 per octave
         x = self.attention_net(x)
 
         # Sum across octaves

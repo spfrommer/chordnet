@@ -9,6 +9,8 @@ from sklearn.metrics import confusion_matrix
 import pytorch_lightning as pl
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from matplotlib import cm
 import tabulate
 
 from chordnet.utils.music_utils import Chord
@@ -192,7 +194,7 @@ class Model(pl.LightningModule):
 
             fig.suptitle(song)
 
-            experiment.add_figure(f'Chords_{type_string}/{i}', fig, self.current_epoch)
+            experiment.add_figure(f'A. Chords {type_string}/{i}', fig, self.current_epoch)
 
     def make_spectra_figures(self, outputs, type_string):
         experiment = self.logger.experiment
@@ -215,7 +217,13 @@ class Model(pl.LightningModule):
             fig, ax = plt.subplots(1, 1)
             fig.set_figwidth(7)
             fig.set_figheight(9)
-            ax.pcolormesh(beat_seq, range(signal.shape[1] + 1), signal.T.numpy(), cmap='plasma')
+
+            plasma = cm.get_cmap('plasma', 1024)
+            plasma_vals = plasma(np.linspace(0, 1, 10024))
+            plasma_vals[0, :] = np.array([0, 0, 0, 1]) # All true zeros become black
+            plasma = ListedColormap(plasma_vals)
+
+            ax.pcolormesh(beat_seq, range(signal.shape[1] + 1), signal.T.numpy(), cmap=plasma)
 
             ax.set_xticks(beat_seq)
 
@@ -240,7 +248,7 @@ class Model(pl.LightningModule):
             fig.suptitle(song)
             fig.tight_layout()
 
-            experiment.add_figure(f'Spectra_{type_string}/{i}', fig, self.current_epoch)
+            experiment.add_figure(f'B. Spectra {type_string}/{i}', fig, self.current_epoch)
 
     def make_confusion_matrices(self, outputs, type_string):
         experiment = self.logger.experiment
@@ -268,13 +276,13 @@ class Model(pl.LightningModule):
         fig.set_figwidth(10)
         fig.set_figheight(10)
         self.plot_confusion_matrix(root_confusion, self.data_props.encoding.roots)
-        experiment.add_figure(f'Confusion Root/{type_string}', fig, self.current_epoch)
+        experiment.add_figure(f'C. Confusion Root/{type_string}', fig, self.current_epoch)
 
         fig, ax = plt.subplots(1, 1)
         fig.set_figwidth(10)
         fig.set_figheight(10)
         self.plot_confusion_matrix(quality_confusion, self.data_props.encoding.qualities)
-        experiment.add_figure(f'Confusion Quality/{type_string}', fig, self.current_epoch)
+        experiment.add_figure(f'D. Confusion Quality/{type_string}', fig, self.current_epoch)
 
     def plot_confusion_matrix(self, cm, classes, normalize=True):
         # Adapted from deeplizard.com
