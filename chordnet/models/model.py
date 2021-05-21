@@ -10,6 +10,7 @@ import pytorch_lightning as pl
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+from matplotlib.patches import Rectangle
 from matplotlib import cm
 import tabulate
 
@@ -196,6 +197,7 @@ class Model(pl.LightningModule):
 
             experiment.add_figure(f'A. Chords {type_string}/{i}', fig, self.current_epoch)
 
+
     def make_spectra_figures(self, outputs, type_string):
         experiment = self.logger.experiment
 
@@ -215,11 +217,12 @@ class Model(pl.LightningModule):
                 beat_seq += [1.0]
 
             fig, ax = plt.subplots(1, 1)
-            fig.set_figwidth(7)
-            fig.set_figheight(9)
+            ax.tick_params(width=2)
+            fig.set_figwidth(10)
+            fig.set_figheight(15)
 
-            plasma = cm.get_cmap('plasma', 1024)
-            plasma_vals = plasma(np.linspace(0, 1, 10024))
+            plasma = cm.get_cmap('plasma', 1000)
+            plasma_vals = plasma(np.linspace(0, 1, 100000))
             plasma_vals[0, :] = np.array([0, 0, 0, 1]) # All true zeros become black
             plasma = ListedColormap(plasma_vals)
 
@@ -245,10 +248,29 @@ class Model(pl.LightningModule):
 
             ax.table(cellText=table, loc='bottom', cellLoc='center', colWidths=col_widths)
 
+            self.chord_overlay(beat_seq, true_seq, ax, color=(0.0, 1.0, 0.0, 0.8))
+            self.chord_overlay(beat_seq, pred_seq, ax, color=(1.0, 0.0, 0.0, 0.5))
+
             fig.suptitle(song)
             fig.tight_layout()
 
             experiment.add_figure(f'B. Spectra {type_string}/{i}', fig, self.current_epoch)
+
+    def chord_overlay(self, beat_seq, chords, ax, color='r'):
+        subdivisions = self.data_props.bin_n // 12
+
+        for i, chord in enumerate(chords):
+            chord = Chord.create_from_string(chord, self.data_props.encoding)
+
+            notes = [(n * subdivisions) % self.data_props.bin_n for n in chord.notes(self.data_props.encoding)]
+            notes_octaves = []
+            for j in range(self.data_props.octave_n):
+                notes_octaves += [n + j * self.data_props.bin_n for n in notes]
+
+            for note in notes_octaves:
+                ax.add_patch(Rectangle((beat_seq[i], note), beat_seq[i+1] - beat_seq[i], 1,
+                    linewidth=2, edgecolor=color, facecolor='none'))
+
 
     def make_confusion_matrices(self, outputs, type_string):
         experiment = self.logger.experiment
@@ -272,23 +294,21 @@ class Model(pl.LightningModule):
                                                   labels=list(range(qual_n)))
 
 
-        fig, ax = plt.subplots(1, 1)
-        fig.set_figwidth(10)
-        fig.set_figheight(10)
-        self.plot_confusion_matrix(root_confusion, self.data_props.encoding.roots)
+        fig = self.plot_confusion_matrix(root_confusion, self.data_props.encoding.roots)
         experiment.add_figure(f'C. Confusion Root/{type_string}', fig, self.current_epoch)
 
-        fig, ax = plt.subplots(1, 1)
-        fig.set_figwidth(10)
-        fig.set_figheight(10)
-        self.plot_confusion_matrix(quality_confusion, self.data_props.encoding.qualities)
+        fig = self.plot_confusion_matrix(quality_confusion, self.data_props.encoding.qualities)
         experiment.add_figure(f'D. Confusion Quality/{type_string}', fig, self.current_epoch)
 
     def plot_confusion_matrix(self, cm, classes, normalize=True):
         # Adapted from deeplizard.com
         if normalize:
             cm = cm.astype('float') / cm.sum()
-            # cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+        fig, ax = plt.subplots(1, 1)
+        ax.tick_params(width=2)
+        fig.set_figwidth(10)
+        fig.set_figheight(10)
 
         cmap = plt.cm.get_cmap('plasma')
 
@@ -307,6 +327,9 @@ class Model(pl.LightningModule):
         plt.tight_layout()
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
+
+        return fig
+
 
     def zip_output_fields(self, outputs, fields, ignore_augment=True, zero_shift=True):
         not_augmented = list_utils.flatten_top([o['song'] for o in outputs])

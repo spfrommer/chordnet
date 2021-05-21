@@ -32,16 +32,31 @@ class Chord():
 
     @staticmethod
     def create_from_string(string, encoding):
-        string = string.replace('min7', 'm7')
+        if string == 'X':
+            return Chord.create_no_encoding()
+
+        if string == 'N':
+            return Chord.create_no_chord(encoding)
+
+        string = Chord.to_pychord_string(string)
 
         chord = pychord.Chord(string)
         root = encoding.note_to_int(chord.root)
 
         quality = str(chord.quality)
-        quality = quality.replace('m7', 'min7')
+        quality = Chord.from_pychord_string(quality)
 
         quality = encoding.quality_to_int(quality)
         return Chord(root, quality)
+
+    def notes(self, encoding):
+        if self.root == NO_ENCODING or encoding.int_to_quality(self.quality) == 'N':
+            return []
+
+        chord = pychord.Chord(Chord.to_pychord_string(self.string_encoding(encoding)))
+        notes = chord.components(visible=False)
+        notes = [n + 3 for n in notes] # pychord makes C the 0 note, we want A
+        return notes
 
     def is_valid(self):
         return not self.no_encoding
@@ -57,6 +72,17 @@ class Chord():
             return 'N'
 
         return encoding.int_to_note(self.root) + encoding.int_to_quality(self.quality)
+
+    @staticmethod
+    def to_pychord_string(chord: str):
+        chord = chord.replace('min7', 'm7')
+        return chord
+
+    @staticmethod
+    def from_pychord_string(chord: str):
+        chord = chord.replace('m7', 'min7')
+        return chord
+
 
 class ChordEncoding():
     def __init__(self, roots: List[str], qualities: List[str]):

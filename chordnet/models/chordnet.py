@@ -27,15 +27,15 @@ class ChordNet(Model):
         in_channels = len(self.history_inclusions)
 
         self.shared_net = build_spectrum_sequential(
-            1, 1, L=2, H=20, nonlin=nonlin, **spectra_args)
+            1, 1, L=1, H=20, nonlin=nonlin, **spectra_args)
 
         self.attention_net = build_spectrum_sequential(in_channels, in_channels,
-            L=2, H=20, nonlin=nonlin, flatten_last=True, **spectra_args)
+            L=1, H=10, nonlin=nonlin, flatten_last=True, **spectra_args)
 
         self.root_net = build_spectrum_sequential(
-            in_channels, 1, L=2, H=200, nonlin=nonlin, octave_n=1, bin_n=data_props.bin_n)
+            in_channels, 1, L=5, H=200, nonlin=nonlin, octave_n=1, bin_n=data_props.bin_n)
 
-        quality_hidden = 100
+        quality_hidden = 2000
         self.quality_net = nn.Sequential(
             nn.Linear(12 * in_channels, quality_hidden),
             nonlin,
@@ -102,7 +102,7 @@ class ChordNet(Model):
         # params.append({'params': self.attention_net.parameters(),
                        # 'lr': 1e-4, 'weight_decay': 1e-4})
 
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4, weight_decay=0)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-5, weight_decay=0)
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda epoch: 0.97 ** epoch)
 
         # return optimizer, scheduler

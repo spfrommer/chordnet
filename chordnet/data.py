@@ -271,7 +271,8 @@ class ChordDataModule(pl.LightningDataModule):
                         root_counts[-1] += 1
                         quality_counts[-1] += 1
                     else:
-                        root_counts[chord[0]] += 1
+                        if not self.props.encoding.int_to_quality(chord[1]) == 'N':
+                            root_counts[chord[0]] += 1
                         quality_counts[chord[1]] += 1
             return root_counts.tolist(), quality_counts.tolist()
 
