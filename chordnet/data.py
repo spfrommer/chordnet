@@ -18,9 +18,9 @@ import librosa
 from typing import List, Dict
 
 from dataclasses import dataclass
-from enum import Enum
 
 from chordnet.utils import dirs, file_utils, music_utils, annotation_utils
+from chordnet.utils.data_utils import DatasetType
 from chordnet.utils.music_utils import Chord, ChordEncoding
 from chordnet.utils.tempo import TempoDetector
 
@@ -31,28 +31,6 @@ class DataProperties():
     encoding: ChordEncoding
     octave_n: int
     bin_n: int # Bins per octave
-
-class DatasetType(Enum):
-    GENERATED                   = 1
-    BILLBOARD_MAJMIN_TINY       = 2
-    BILLBOARD_MAJMIN7_TINY      = 3
-    BILLBOARD_MAJMIN_SMALL      = 4
-    BILLBOARD_MAJMIN7_SMALL     = 5
-    BILLBOARD_MAJMIN_ALL        = 6
-    BILLBOARD_MAJMIN7_ALL       = 7
-
-    @classmethod
-    def from_string(cls, type_string):
-        return {
-            'gen': cls.GENERATED,
-            'bill-mm-tiny': cls.BILLBOARD_MAJMIN_TINY,
-            'bill-mm7-tiny': cls.BILLBOARD_MAJMIN7_TINY,
-            'bill-mm-small': cls.BILLBOARD_MAJMIN_SMALL,
-            'bill-mm7-small': cls.BILLBOARD_MAJMIN7_SMALL,
-            'bill-mm-all': cls.BILLBOARD_MAJMIN_ALL,
-            'bill-mm7-all': cls.BILLBOARD_MAJMIN7_ALL
-        }.get(type_string)
-
 
 class ListDataset(torch.utils.data.Dataset):
     def __init__(self, signals: List[Tensor], targets: List[Tensor], metadatas: List[Dict]):
@@ -322,12 +300,13 @@ class ChordDataModule(pl.LightningDataModule):
                 DatasetType.BILLBOARD_MAJMIN7_ALL:      self.parse_spectra_song
             }
 
-            # parsed = parsers[self.dataset_type](dirs.data_path(wav_file))
+            parsed = parsers[self.dataset_type](dirs.data_path(wav_file))
             try:
                 parsed = parsers[self.dataset_type](dirs.data_path(wav_file))
             except KeyboardInterrupt:
                 sys.exit()
             except Exception as e:
+                print(e)
                 print(f'Got exception on parsing {wav_file} -- skipping')
                 continue
 
@@ -339,7 +318,9 @@ class ChordDataModule(pl.LightningDataModule):
         f0, data = wav.read(wav_file)
         wav_file = file_utils.file_name(wav_file)
 
-        chroma = self.parse_spectra_window(data, f0, self.props.octave_n, t_start=0.0, win=0.5)
+        octaves = list(range(self.START_OCTAVE - 1,
+                             self.START_OCTAVE + self.props.octave_n + 1))
+        chroma = self.parse_spectra_window(data, f0, octaves, t_start=0.0, win=0.5)
         chroma = chroma.flatten()
 
         chord_name = file_utils.remove_extension(wav_file)

@@ -1,17 +1,17 @@
 import operator
 
-import chordnet.data as data
+from chordnet.utils.data_utils import DatasetType
 from chordnet.utils import dirs
 from chordnet.utils.music_utils import *
 
 def load_annotations(song_id, dataset_type, chord_encoding):
     lab_files = {
-        data.DatasetType.BILLBOARD_MAJMIN_TINY:    'majmin.lab',
-        data.DatasetType.BILLBOARD_MAJMIN7_TINY:   'majmin7.lab',
-        data.DatasetType.BILLBOARD_MAJMIN_SMALL:   'majmin.lab',
-        data.DatasetType.BILLBOARD_MAJMIN7_SMALL:  'majmin7.lab',
-        data.DatasetType.BILLBOARD_MAJMIN_ALL:     'majmin.lab',
-        data.DatasetType.BILLBOARD_MAJMIN7_ALL:    'majmin7.lab'
+        DatasetType.BILLBOARD_MAJMIN_TINY:    'majmin.lab',
+        DatasetType.BILLBOARD_MAJMIN7_TINY:   'majmin7.lab',
+        DatasetType.BILLBOARD_MAJMIN_SMALL:   'majmin.lab',
+        DatasetType.BILLBOARD_MAJMIN7_SMALL:  'majmin7.lab',
+        DatasetType.BILLBOARD_MAJMIN_ALL:     'majmin.lab',
+        DatasetType.BILLBOARD_MAJMIN7_ALL:    'majmin7.lab'
     }
 
     annotations_file = dirs.data_path(

@@ -62,10 +62,10 @@ def run(model, epochs, data, fetch_data, file_filter, augment):
                               batch_size=1, split=[0.5, 0.5, 0.0])
 
     # Tuples of network, gpus
-    models = {'mlp': (MLP(dataset.props), 1),
-              'mlprnn': (MLPRNN(dataset.props), 1),
-              'conv': (ConvNet(dataset.props), 1),
-              'chord': (ChordNet(dataset.props), 1)}
+    models = {'mlp': (MLP(dataset.props), 0),
+              'mlprnn': (MLPRNN(dataset.props), 0),
+              'conv': (ConvNet(dataset.props), 0),
+              'chord': (ChordNet(dataset.props), 0)}
 
     model, gpus = models[model]
 

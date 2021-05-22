@@ -73,7 +73,7 @@ class Model(pl.LightningModule):
                 has_root = (quality_true != 0).nonzero(as_tuple=True)[0]
                 root_pred = root_pred[has_root, :]
                 root_true = root_true[has_root]
-                vb['root_pred_proc'], vb['root_true_proc'] = root_pred, root_true
+            vb['root_pred_proc'], vb['root_true_proc'] = root_pred, root_true
 
             if torch.numel(root_pred) > 0:
                 vb['root_loss'] = self.loss_func(root_pred, root_true)
@@ -207,14 +207,14 @@ class Model(pl.LightningModule):
 
         for (i, (beat_seq, pred_seq, true_seq, song, signal)) in enumerate(plot_data):
             signal = signal.cpu()
-            start_n = 0 if len(beat_seq) == 1 else 1
+            start_n = 0 if len(beat_seq) <= 1 else 1
             chord_n = 10 + start_n
             beat_seq, pred_seq, true_seq, signal = ([0.0] + beat_seq)[start_n:chord_n+1], \
                 pred_seq[start_n:chord_n], true_seq[start_n:chord_n], signal[start_n:chord_n]
 
             # If data has no beats (single chord), give arbitrary end time
-            if len(beat_seq) == 1:
-                beat_seq += [1.0]
+            if len(beat_seq) <= 1:
+                beat_seq = [0.0, 1.0]
 
             fig, ax = plt.subplots(1, 1)
             ax.tick_params(width=2)
@@ -225,7 +225,7 @@ class Model(pl.LightningModule):
             plasma_vals = plasma(np.linspace(0, 1, 100000))
             plasma_vals[0, :] = np.array([0, 0, 0, 1]) # All true zeros become black
             plasma = ListedColormap(plasma_vals)
-
+            
             ax.pcolormesh(beat_seq, range(signal.shape[1] + 1), signal.T.numpy(), cmap=plasma)
 
             ax.set_xticks(beat_seq)
