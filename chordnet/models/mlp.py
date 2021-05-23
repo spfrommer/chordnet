@@ -23,7 +23,7 @@ def build_sequential(in_length, out_length, L, H):
 
 
 class MLP(Model):
-    def __init__(self, data_props, L=5, H=100):
+    def __init__(self, data_props, L=5, H=300):
         super().__init__(data_props)
 
         spectra_len = data_props.octave_n * data_props.bin_n
@@ -39,4 +39,4 @@ class MLP(Model):
         return self.root_net(x), self.quality_net(x), torch.tensor(0.0)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=1e-3)
+        return torch.optim.Adam(self.parameters(), lr=1e-4)

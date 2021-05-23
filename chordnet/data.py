@@ -426,7 +426,7 @@ class ChordDataModule(pl.LightningDataModule):
 
     def parse_spectra_window(self, data, f0, octaves, t_start=0.0, win=3.0):
         """
-        Parses the first 3 seconds of audio and returns the frequency decomposition.
+        Parses the segment of audio and returns the frequency decomposition.
 
         Parameters:
             data: numpy array of audio data
@@ -520,4 +520,4 @@ class ChordDataModule(pl.LightningDataModule):
                 if len_notepow != 0:
                     subtonesofToct[i, j, :] += np.sum(notepow, axis = 0)/len_notepow
 
-        return subtonesofToct.squeeze()
+        return np.log(1 + subtonesofToct.squeeze())
