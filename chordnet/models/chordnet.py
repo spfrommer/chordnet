@@ -33,7 +33,7 @@ class ChordNet(Model):
             L=1, H=10, nonlin=nonlin, flatten_last=True, **spectra_args)
 
         self.root_net = build_spectrum_sequential(
-            in_channels, 1, L=5, H=200, nonlin=nonlin, octave_n=1, bin_n=data_props.bin_n)
+            in_channels, 1, L=5, H=200, nonlin=nonlin, octave_n=1, bin_n=12)
 
         quality_hidden = 2000
         self.quality_net = nn.Sequential(
