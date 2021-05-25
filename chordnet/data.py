@@ -300,7 +300,6 @@ class ChordDataModule(pl.LightningDataModule):
                 DatasetType.BILLBOARD_MAJMIN7_ALL:      self.parse_spectra_song
             }
 
-            parsed = parsers[self.dataset_type](dirs.data_path(wav_file))
             try:
                 parsed = parsers[self.dataset_type](dirs.data_path(wav_file))
             except KeyboardInterrupt:
